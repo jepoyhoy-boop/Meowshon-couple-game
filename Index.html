@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Us — A Game for Two | by Lance Yoshi</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500&display=swap');
+
+  :root {
+    --rose:    #e8637a;
+    --blush:   #f5b8c4;
+    --cream:   #fdf6f0;
+    --plum:    #3d1a2e;
+    --gold:    #c9943a;
+    --soft:    #f9eef2;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: var(--plum);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  /* ── Screens ── */
+  .screen {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s;
+  }
+  .screen.active {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  /* ── Home ── */
+  #home {
+    background: linear-gradient(160deg, #2a0f20 0%, var(--plum) 50%, #1a0f30 100%);
+    text-align: center;
+  }
+  .hearts-bg {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .heart-float {
+    position: absolute;
+    font-size: 20px;
+    animation: floatUp linear infinite;
+    opacity: 0.15;
+  }
+  @keyframes floatUp {
+    0%   { transform: translateY(110vh) rotate(-10deg); opacity: 0; }
+    10%  { opacity: 0.15; }
+    90%  { opacity: 0.1; }
+    100% { transform: translateY(-10vh) rotate(10deg); opacity: 0; }
+  }
+
+  .logo {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(52px, 16vw, 80px);
+    font-style: italic;
+    color: var(--blush);
+    letter-spacing: -1px;
+    line-height: 1;
+    margin-bottom: 8px;
+    text-shadow: 0 0 40px rgba(232,99,122,0.4);
+  }
+  .logo-sub {
+    font-size: 13px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 48px;
+  }
+
+  .game-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    width: 100%;
+    max-width: 340px;
+    margin-bottom: 32px;
+  }
+  .game-card {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 18px;
+    padding: 20px 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+  .game-card:active { transform: scale(0.95); background: rgba(255,255,255,0.12); }
+  .game-card .icon { font-size: 32px; margin-bottom: 8px; }
+  .game-card .name {
+    font-size: 13px;
+    color: var(--cream);
+    font-weight: 500;
+  }
+  .game-card .desc {
+    font-size: 11px;
+    color: rgba(255,255,255,0.4);
+    margin-top: 4px;
+    line-height: 1.4;
+  }
+
+  /* ── Shared card ── */
+  .card {
+    background: var(--cream);
+    border-radius: 28px;
+    padding: 32px 24px;
+    width: 100%;
+    max-width: 380px;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.5);
+  }
+  .card-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 26px;
+    color: var(--plum);
+    margin-bottom: 6px;
+  }
+  .card-sub {
+    font-size: 13px;
+    color: var(--rose);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+
+  /* ── Truth or Dare ── */
+  #tod-screen { background: linear-gradient(160deg, #1a0830 0%, #2d1040 100%); }
+
+  .tod-choice {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+  .tod-btn {
+    flex: 1;
+    padding: 14px;
+    border-radius: 16px;
+    border: 2px solid transparent;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .tod-btn.truth { background: #f5e6d3; color: #7a4a00; }
+  .tod-btn.dare  { background: #fce4ec; color: #880e4f; }
+  .tod-btn:active { transform: scale(0.95); }
+  .tod-btn.selected { border-color: var(--plum); transform: scale(1.03); }
+
+  .prompt-box {
+    background: var(--soft);
+    border-radius: 16px;
+    padding: 24px;
+    min-height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-family: 'Playfair Display', serif;
+    font-size: 18px;
+    color: var(--plum);
+    line-height: 1.5;
+    margin-bottom: 20px;
+    font-style: italic;
+  }
+
+  /* ── Would You Rather ── */
+  #wyr-screen { background: linear-gradient(160deg, #0d1f30 0%, #1a2d40 100%); }
+
+  .wyr-options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .wyr-opt {
+    background: var(--soft);
+    border: 2px solid transparent;
+    border-radius: 16px;
+    padding: 18px 20px;
+    font-size: 16px;
+    color: var(--plum);
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+    line-height: 1.4;
+  }
+  .wyr-opt:active { transform: scale(0.98); }
+  .wyr-opt.chosen-a { background: #e8f5e9; border-color: #388e3c; }
+  .wyr-opt.chosen-b { background: #e3f2fd; border-color: #1976d2; }
+  .wyr-divider {
+    text-align: center;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--rose);
+    letter-spacing: 2px;
+    margin: -4px 0;
+  }
+  .wyr-result {
+    text-align: center;
+    font-size: 14px;
+    color: #666;
+    min-height: 40px;
+    padding: 8px;
+    font-style: italic;
+  }
+
+  /* ── Love Quiz ── */
+  #quiz-screen { background: linear-gradient(160deg, #1f0d10 0%, #2d1520 100%); }
+
+  .quiz-question {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    color: var(--plum);
+    margin-bottom: 20px;
+    line-height: 1.4;
+    font-style: italic;
+  }
+  .quiz-options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+  .quiz-opt {
+    background: var(--soft);
+    border: 2px solid transparent;
+    border-radius: 14px;
+    padding: 14px 18px;
+    font-size: 15px;
+    color: var(--plum);
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+  }
+  .quiz-opt:active { transform: scale(0.98); }
+  .quiz-opt.correct { background: #e8f5e9; border-color: #388e3c; }
+  .quiz-opt.wrong   { background: #ffebee; border-color: #e53935; }
+
+  .quiz-progress {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+  .quiz-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: rgba(61,26,46,0.15);
+    transition: background 0.3s;
+  }
+  .quiz-dot.done { background: var(--rose); }
+  .quiz-dot.active { background: var(--gold); }
+
+  .score-display {
+    text-align: center;
+    font-family: 'Playfair Display', serif;
+    font-size: 48px;
+    color: var(--rose);
+    margin: 8px 0;
+  }
+  .score-msg {
+    text-align: center;
+    color: #555;
+    font-size: 15px;
+    font-style: italic;
+    line-height: 1.5;
+  }
+
+  /* ── Memory Match ── */
+  #match-screen { background: linear-gradient(160deg, #0f1a10 0%, #1a2a1a 100%); }
+
+  .match-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .match-card {
+    aspect-ratio: 1;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: transform 0.3s;
+    transform-style: preserve-3d;
+    position: relative;
+  }
+  .match-card.flipped { transform: rotateY(180deg); }
+  .match-card.matched { opacity: 0.6; cursor: default; }
+  .match-front, .match-back {
+    position: absolute;
+    inset: 0;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    backface-visibility: hidden;
+  }
+  .match-front { background: var(--rose); }
+  .match-back  { background: var(--soft); transform: rotateY(180deg); }
+
+  .match-scores {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .player-score {
+    text-align: center;
+    flex: 1;
+    padding: 10px;
+    border-radius: 12px;
+    background: var(--soft);
+  }
+  .player-score.active-player { background: #fce4ec; border: 2px solid var(--rose); }
+  .player-score .pname { font-size: 12px; color: #888; letter-spacing: 1px; text-transform: uppercase; }
+  .player-score .pscore { font-size: 28px; font-family: 'Playfair Display', serif; color: var(--plum); }
+
+  /* ── Shared buttons ── */
+  .btn-primary {
+    width: 100%;
+    padding: 16px;
+    background: var(--rose);
+    color: white;
+    border: none;
+    border-radius: 16px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.5px;
+    margin-top: 8px;
+  }
+  .btn-primary:active { transform: scale(0.97); background: #d04f66; }
+
+  .btn-ghost {
+    width: 100%;
+    padding: 12px;
+    background: transparent;
+    color: var(--rose);
+    border: 1px solid rgba(232,99,122,0.3);
+    border-radius: 14px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 8px;
+  }
+  .btn-ghost:active { background: rgba(232,99,122,0.08); }
+
+  /* ── Turn indicator ── */
+  .turn-badge {
+    display: inline-block;
+    background: var(--rose);
+    color: white;
+    border-radius: 20px;
+    padding: 4px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  /* ── Result screen ── */
+  #result-screen { background: linear-gradient(160deg, #1a0820 0%, #2a1040 100%); text-align: center; }
+  .result-emoji { font-size: 64px; margin-bottom: 16px; }
+  .result-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 32px;
+    color: var(--blush);
+    margin-bottom: 8px;
+  }
+  .result-msg { color: rgba(255,255,255,0.6); font-size: 15px; line-height: 1.6; max-width: 280px; margin: 0 auto 32px; }
+  .result-btns { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 300px; }
+  .result-btns .btn-primary { background: var(--rose); }
+  .result-btns .btn-ghost { color: rgba(255,255,255,0.5); border-color: rgba(255,255,255,0.2); }
+</style>
+</head>
+<body>
+
+<!-- ══ HOME ══ -->
+<div class="screen active" id="home">
+  <div class="hearts-bg" id="heartsBg"></div>
+  <div class="logo">Us</div>
+  <div class="logo-sub">A game for two</div>
+  <div style="font-size:11px; color:rgba(255,255,255,0.28); letter-spacing:2px; text-transform:uppercase; margin-top:-36px; margin-bottom:36px;">by Lance Yoshi</div>
+  <div class="game-grid">
+    <div class="game-card" onclick="startGame('tod')">
+      <div class="icon">🎲</div>
+      <div class="name">Truth or Dare</div>
+      <div class="desc">Take turns, get closer</div>
+    </div>
+    <div class="game-card" onclick="startGame('wyr')">
+      <div class="icon">💭</div>
+      <div class="name">Would You Rather</div>
+      <div class="desc">See how well you match</div>
+    </div>
+    <div class="game-card" onclick="startGame('quiz')">
+      <div class="icon">💌</div>
+      <div class="name">Love Quiz</div>
+      <div class="desc">How well do you know them?</div>
+    </div>
+    <div class="game-card" onclick="startGame('match')">
+      <div class="icon">🃏</div>
+      <div class="name">Memory Match</div>
+      <div class="desc">Compete for pairs</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TRUTH OR DARE ══ -->
+<div class="screen" id="tod-screen">
+  <div class="card">
+    <div class="turn-badge" id="tod-turn">Player 1's Turn</div>
+    <div class="card-title">Truth or Dare?</div>
+    <div class="card-sub">Pass the phone 💕</div>
+    <div class="tod-choice">
+      <button class="tod-btn truth" onclick="pickTOD('truth')">🤍 Truth</button>
+      <button class="tod-btn dare"  onclick="pickTOD('dare')">🔥 Dare</button>
+    </div>
+    <div class="prompt-box" id="tod-prompt">Choose Truth or Dare to begin…</div>
+    <button class="btn-primary" onclick="nextTOD()">Next →</button>
+    <button class="btn-ghost" onclick="goHome()">← Back to games</button>
+  </div>
+</div>
+
+<!-- ══ WOULD YOU RATHER ══ -->
+<div class="screen" id="wyr-screen">
+  <div class="card">
+    <div class="card-title">Would You Rather</div>
+    <div class="card-sub">Both pick, then reveal 💕</div>
+    <div class="wyr-options">
+      <div class="wyr-opt" id="wyr-a" onclick="wyrPick('a')"></div>
+      <div class="wyr-divider">OR</div>
+      <div class="wyr-opt" id="wyr-b" onclick="wyrPick('b')"></div>
+    </div>
+    <div class="wyr-result" id="wyr-result">Tap your choice — don't show each other yet!</div>
+    <button class="btn-primary" id="wyr-next" onclick="nextWYR()" style="display:none">Next Question →</button>
+    <button class="btn-ghost" onclick="goHome()">← Back to games</button>
+  </div>
+</div>
+
+<!-- ══ LOVE QUIZ ══ -->
+<div class="screen" id="quiz-screen">
+  <div class="card">
+    <div class="turn-badge" id="quiz-turn">Player 1 Answering</div>
+    <div class="quiz-progress" id="quiz-progress"></div>
+    <div class="quiz-question" id="quiz-q"></div>
+    <div class="quiz-options" id="quiz-opts"></div>
+    <div id="quiz-result-area" style="display:none">
+      <div class="score-display" id="quiz-score"></div>
+      <div class="score-msg" id="quiz-msg"></div>
+      <button class="btn-primary" onclick="nextQuizRound()">Player 2's Turn →</button>
+    </div>
+    <button class="btn-ghost" onclick="goHome()">← Back to games</button>
+  </div>
+</div>
+
+<!-- ══ MEMORY MATCH ══ -->
+<div class="screen" id="match-screen">
+  <div class="card">
+    <div class="card-title">Memory Match</div>
+    <div class="match-scores">
+      <div class="player-score active-player" id="p1-score">
+        <div class="pname">Player 1</div>
+        <div class="pscore" id="p1-pts">0</div>
+      </div>
+      <div style="width:12px"></div>
+      <div class="player-score" id="p2-score">
+        <div class="pname">Player 2</div>
+        <div class="pscore" id="p2-pts">0</div>
+      </div>
+    </div>
+    <div class="match-grid" id="match-grid"></div>
+    <div class="wyr-result" id="match-status">Find matching pairs! 💕</div>
+    <button class="btn-ghost" onclick="goHome()">← Back to games</button>
+  </div>
+</div>
+
+<!-- ══ RESULT ══ -->
+<div class="screen" id="result-screen">
+  <div class="result-emoji" id="res-emoji">💕</div>
+  <div class="result-title" id="res-title">Amazing!</div>
+  <div class="result-msg" id="res-msg"></div>
+  <div class="result-btns">
+    <button class="btn-primary" id="res-play-again" onclick="playAgain()">Play Again</button>
+    <button class="btn-ghost" onclick="goHome()">← All Games</button>
+  </div>
+</div>
+
+<script>
+// ── Helpers ──────────────────────────────────────────────────────
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function goHome() { show('home'); }
+
+// ── Floating hearts ──────────────────────────────────────────────
+const emojis = ['💕','❤️','🌹','💖','✨','🌸','💗','🥀'];
+const bg = document.getElementById('heartsBg');
+for (let i = 0; i < 14; i++) {
+  const h = document.createElement('div');
+  h.className = 'heart-float';
+  h.textContent = emojis[i % emojis.length];
+  h.style.left = Math.random() * 100 + '%';
+  h.style.animationDuration = (8 + Math.random() * 10) + 's';
+  h.style.animationDelay = (-Math.random() * 15) + 's';
+  h.style.fontSize = (14 + Math.random() * 18) + 'px';
+  bg.appendChild(h);
+}
+
+// ── Game launcher ─────────────────────────────────────────────────
+let currentGame = '';
+function startGame(game) {
+  currentGame = game;
+  if (game === 'tod')   initTOD();
+  if (game === 'wyr')   initWYR();
+  if (game === 'quiz')  initQuiz();
+  if (game === 'match') initMatch();
+}
+function playAgain() { startGame(currentGame); }
+
+// ══════════════════════════════════════════
+// TRUTH OR DARE
+// ══════════════════════════════════════════
+const truths = [
+  "What's the first thing you noticed about me?",
+  "What song makes you think of us?",
+  "What's your most embarrassing memory?",
+  "If you could change one thing about yourself, what would it be?",
+  "What did you think when we first met?",
+  "What's the sweetest thing I've ever done for you?",
+  "What's a dream you've never told me?",
+  "When did you realize you had feelings for me?",
+  "What's your love language and do I speak it well?",
+  "What's something you've always wanted to try with me?",
+  "What quality of mine do you admire most?",
+  "What memory of us makes you smile the most?",
+  "Is there something you've been wanting to tell me?",
+  "What's your ideal date night with me?",
+  "What always makes you feel safe around me?",
+];
+const dares = [
+  "Serenade your partner with any song for 30 seconds 🎶",
+  "Give your partner a 30-second shoulder massage 💆",
+  "Say one thing you've never told them before 🤫",
+  "Do your best impression of your partner 😂",
+  "Whisper the nicest compliment you can think of 🌹",
+  "Show your partner your most embarrassing photo on your phone 📸",
+  "Write your partner's name on your wrist and draw a heart around it ✍️",
+  "Let your partner post anything on your social media 😬",
+  "Act out how you felt when you first fell for them 🥺",
+  "Give your partner 10 genuine compliments without laughing 💕",
+  "Do a dramatic reenactment of your first date 🎭",
+  "Let your partner style your hair however they want 💇",
+  "Share a secret you've been keeping (nothing hurtful!) 🤐",
+  "Slow dance with your partner right now 💃",
+  "Speak in an accent for the next 3 rounds 🗣️",
+];
+
+let todPlayer = 1;
+let todMode = null;
+let usedTruths = [], usedDares = [];
+
+function initTOD() {
+  todPlayer = 1;
+  todMode = null;
+  usedTruths = []; usedDares = [];
+  document.getElementById('tod-prompt').textContent = 'Choose Truth or Dare to begin…';
+  document.getElementById('tod-turn').textContent = "Player 1's Turn";
+  document.querySelectorAll('.tod-btn').forEach(b => b.classList.remove('selected'));
+  show('tod-screen');
+}
+
+function pickTOD(type) {
+  todMode = type;
+  document.querySelectorAll('.tod-btn').forEach(b => b.classList.remove('selected'));
+  event.target.classList.add('selected');
+  const pool = type === 'truth' ? truths : dares;
+  const used = type === 'truth' ? usedTruths : usedDares;
+  if (used.length >= pool.length) { used.length = 0; }
+  let idx;
+  do { idx = Math.floor(Math.random() * pool.length); } while (used.includes(idx));
+  used.push(idx);
+  document.getElementById('tod-prompt').textContent = pool[idx];
+}
+
+function nextTOD() {
+  todPlayer = todPlayer === 1 ? 2 : 1;
+  todMode = null;
+  document.getElementById('tod-prompt').textContent = 'Choose Truth or Dare to begin…';
+  document.getElementById('tod-turn').textContent = `Player ${todPlayer}'s Turn`;
+  document.querySelectorAll('.tod-btn').forEach(b => b.classList.remove('selected'));
+}
+
+// ══════════════════════════════════════════
+// WOULD YOU RATHER
+// ══════════════════════════════════════════
+const wyrQuestions = [
+  ["Travel the world for a year", "Stay home in total comfort forever"],
+  ["Always know what your partner is thinking", "Have your partner never know what you're thinking"],
+  ["Cook a romantic dinner every night", "Get a romantic dinner cooked for you every night"],
+  ["Live in a tiny cozy cabin with your love", "Live in a huge mansion apart from them"],
+  ["Have a slow dance in the rain", "Watch the sunset together on a mountain"],
+  ["Read each other's minds for a day", "Swap bodies for a day"],
+  ["Travel back in time to your first date", "Fast forward to see where you'll be in 10 years"],
+  ["Write your partner a love letter every week", "Get a surprise gift every month"],
+  ["Never fight, but also never talk about feelings", "Fight openly but always resolve it with a hug"],
+  ["Adopt a dog together", "Adopt a cat together"],
+  ["Go on a spontaneous road trip", "Plan the perfect vacation for a year"],
+  ["Be each other's only friend", "Have a huge friend group but less couple time"],
+];
+
+let wyrIndex = 0, wyrP1 = null, wyrP2 = null, wyrPhase = 1;
+
+function initWYR() {
+  wyrIndex = 0; wyrP1 = null; wyrP2 = null; wyrPhase = 1;
+  document.getElementById('wyr-result').textContent = "Player 1: tap your choice — don't show Player 2!";
+  document.getElementById('wyr-next').style.display = 'none';
+  document.getElementById('wyr-a').classList.remove('chosen-a','chosen-b');
+  document.getElementById('wyr-b').classList.remove('chosen-a','chosen-b');
+  loadWYR();
+  show('wyr-screen');
+}
+
+function loadWYR() {
+  const q = wyrQuestions[wyrIndex % wyrQuestions.length];
+  document.getElementById('wyr-a').textContent = '🅰️  ' + q[0];
+  document.getElementById('wyr-b').textContent = '🅱️  ' + q[1];
+  document.getElementById('wyr-a').classList.remove('chosen-a','chosen-b');
+  document.getElementById('wyr-b').classList.remove('chosen-a','chosen-b');
+  wyrP1 = null; wyrP2 = null; wyrPhase = 1;
+  document.getElementById('wyr-result').textContent = "Player 1: tap your choice — don't show Player 2!";
+  document.getElementById('wyr-next').style.display = 'none';
+}
+
+function wyrPick(opt) {
+  if (wyrPhase === 1) {
+    wyrP1 = opt;
+    wyrPhase = 2;
+    document.getElementById('wyr-result').textContent = "✅ Player 1 chose! Now Player 2 picks…";
+  } else if (wyrPhase === 2) {
+    wyrP2 = opt;
+    wyrPhase = 3;
+    // Reveal
+    document.getElementById('wyr-a').classList.add(wyrP1 === 'a' ? 'chosen-a' : '');
+    document.getElementById('wyr-b').classList.add(wyrP1 === 'b' ? 'chosen-b' : '');
+    const match = wyrP1 === wyrP2;
+    const q = wyrQuestions[wyrIndex % wyrQuestions.length];
+    const p1choice = wyrP1 === 'a' ? q[0] : q[1];
+    const p2choice = wyrP2 === 'a' ? q[0] : q[1];
+    document.getElementById('wyr-result').innerHTML = match
+      ? `💕 You both chose <strong>${p1choice}</strong>! Perfect match!`
+      : `P1: <em>${p1choice}</em> · P2: <em>${p2choice}</em> — different choices! Discuss! 🗣️`;
+    document.getElementById('wyr-next').style.display = 'block';
+    wyrIndex++;
+  }
+}
+
+function nextWYR() {
+  if (wyrIndex >= wyrQuestions.length) {
+    showResult('wyr', '💭', "You've Talked It All Out!", "You've explored your preferences together — now you know each other a little better. 💕");
+    return;
+  }
+  loadWYR();
+}
+
+// ══════════════════════════════════════════
+// LOVE QUIZ
+// ══════════════════════════════════════════
+const quizQuestions = [
+  { q: "What's my favorite comfort food?", opts: ["Pizza 🍕", "Ice cream 🍦", "Ramen 🍜", "Tacos 🌮"] },
+  { q: "If I could visit anywhere, I'd choose…", opts: ["Japan 🗾", "Italy 🇮🇹", "Maldives 🏝️", "New York 🗽"] },
+  { q: "My go-to movie genre is…", opts: ["Romance 💕", "Horror 👻", "Comedy 😂", "Action 💥"] },
+  { q: "What do I do when I'm stressed?", opts: ["Go quiet 🤐", "Talk it out 🗣️", "Clean everything 🧹", "Binge TV 📺"] },
+  { q: "My love language is mainly…", opts: ["Words of affirmation 🗣️", "Physical touch 🤗", "Gift giving 🎁", "Quality time ⏰"] },
+  { q: "My ideal weekend is…", opts: ["Total cozy rest 🛋️", "Adventures outside 🏔️", "Friends & social 🥂", "Creative projects 🎨"] },
+  { q: "I get annoyed by…", opts: ["Loud chewing 😤", "Being late ⏰", "Interrupting 🙅", "Mess & clutter 🗑️"] },
+  { q: "My spirit animal would be…", opts: ["Cat 🐱", "Dog 🐶", "Dolphin 🐬", "Fox 🦊"] },
+];
+
+let quizIdx = 0, quizScore = 0, quizRound = 1, quizAnswered = false;
+
+function initQuiz() {
+  quizIdx = 0; quizScore = 0; quizRound = 1;
+  document.getElementById('quiz-turn').textContent = 'Player 2 sets the answers';
+  document.getElementById('quiz-result-area').style.display = 'none';
+  document.getElementById('quiz-opts').style.display = 'flex';
+  buildProgress();
+  loadQuiz();
+  show('quiz-screen');
+}
+
+function buildProgress() {
+  const p = document.getElementById('quiz-progress');
+  p.innerHTML = '';
+  quizQuestions.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'quiz-dot' + (i === 0 ? ' active' : '');
+    p.appendChild(d);
+  });
+}
+
+function loadQuiz() {
+  quizAnswered = false;
+  const q = quizQuestions[quizIdx];
+  document.getElementById('quiz-q').textContent = q.q;
+  const opts = document.getElementById('quiz-opts');
+  opts.innerHTML = '';
+  opts.style.display = 'flex';
+  q.opts.forEach((o, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'quiz-opt';
+    btn.textContent = o;
+    btn.onclick = () => pickQuiz(i, btn, q.opts.length);
+    opts.appendChild(btn);
+  });
+  // Update dots
+  document.querySelectorAll('.quiz-dot').forEach((d, i) => {
+    d.className = 'quiz-dot' + (i < quizIdx ? ' done' : i === quizIdx ? ' active' : '');
+  });
+}
+
+// In round 1 Player 2 picks the "correct" answer; in round 2 Player 1 guesses
+let quizAnswers = [];
+
+function pickQuiz(idx, btn, total) {
+  if (quizAnswered) return;
+  quizAnswered = true;
+  if (quizRound === 1) {
+    // P2 is setting answers
+    quizAnswers[quizIdx] = idx;
+    btn.style.background = '#e8f5e9';
+    btn.style.borderColor = '#388e3c';
+    setTimeout(() => {
+      quizIdx++;
+      if (quizIdx >= quizQuestions.length) {
+        // Done setting — now P1 guesses
+        quizIdx = 0; quizRound = 2; quizScore = 0;
+        document.getElementById('quiz-turn').textContent = 'Player 1 is Guessing!';
+        buildProgress();
+        loadQuiz();
+      } else { loadQuiz(); }
+    }, 600);
+  } else {
+    // P1 guessing
+    const correct = quizAnswers[quizIdx];
+    document.querySelectorAll('.quiz-opt').forEach((b, i) => {
+      if (i === correct) b.classList.add('correct');
+      else if (i === idx && idx !== correct) b.classList.add('wrong');
+    });
+    if (idx === correct) quizScore++;
+    setTimeout(() => {
+      quizIdx++;
+      if (quizIdx >= quizQuestions.length) {
+        showQuizResult();
+      } else { loadQuiz(); }
+    }, 900);
+  }
+}
+
+function showQuizResult() {
+  document.getElementById('quiz-opts').style.display = 'none';
+  document.getElementById('quiz-result-area').style.display = 'block';
+  document.getElementById('quiz-score').textContent = `${quizScore}/${quizQuestions.length}`;
+  const msgs = [
+    [0,2, "Still learning each other — that's the fun part! 💕"],
+    [3,5, "Pretty good! A few surprises in there. Keep exploring 🌸"],
+    [6,7, "You know each other really well! So sweet 💖"],
+    [8,8, "Perfect score! You two are absolutely in sync ✨"],
+  ];
+  const msg = msgs.find(([a,b]) => quizScore >= a && quizScore <= b);
+  document.getElementById('quiz-msg').textContent = msg[2];
+  document.getElementById('quiz-result-area').querySelector('button').style.display = 'none';
+}
+
+function nextQuizRound() {} // already handled inline
+
+// ══════════════════════════════════════════
+// MEMORY MATCH
+// ══════════════════════════════════════════
+const matchEmojis = ['💕','🌹','💍','🥂','🎶','💌','🌙','🌸'];
+let matchCards = [], flipped = [], matchedCount = 0, matchTurn = 1, scores = [0,0], matchLocked = false;
+
+function initMatch() {
+  scores = [0,0]; matchTurn = 1; matchedCount = 0; matchLocked = false;
+  document.getElementById('p1-pts').textContent = '0';
+  document.getElementById('p2-pts').textContent = '0';
+  document.getElementById('p1-score').classList.add('active-player');
+  document.getElementById('p2-score').classList.remove('active-player');
+  document.getElementById('match-status').textContent = "Player 1 goes first! Find matching pairs 💕";
+
+  // Shuffle cards
+  const pairs = [...matchEmojis, ...matchEmojis];
+  pairs.sort(() => Math.random() - 0.5);
+
+  const grid = document.getElementById('match-grid');
+  grid.innerHTML = '';
+  matchCards = [];
+  flipped = [];
+
+  pairs.forEach((emoji, i) => {
+    const card = document.createElement('div');
+    card.className = 'match-card';
+    card.innerHTML = `<div class="match-front">💗</div><div class="match-back">${emoji}</div>`;
+    card.dataset.emoji = emoji;
+    card.dataset.idx = i;
+    card.onclick = () => flipCard(card, i);
+    grid.appendChild(card);
+    matchCards.push(card);
+  });
+
+  show('match-screen');
+}
+
+function flipCard(card, idx) {
+  if (matchLocked) return;
+  if (card.classList.contains('flipped') || card.classList.contains('matched')) return;
+  card.classList.add('flipped');
+  flipped.push(card);
+
+  if (flipped.length === 2) {
+    matchLocked = true;
+    setTimeout(() => checkMatch(), 800);
+  }
+}
+
+function checkMatch() {
+  const [a, b] = flipped;
+  if (a.dataset.emoji === b.dataset.emoji) {
+    a.classList.add('matched'); b.classList.add('matched');
+    scores[matchTurn - 1]++;
+    document.getElementById(`p${matchTurn}-pts`).textContent = scores[matchTurn - 1];
+    matchedCount++;
+    document.getElementById('match-status').textContent = `Player ${matchTurn} got a pair! 🎉`;
+    if (matchedCount === matchEmojis.length) {
+      setTimeout(endMatch, 500);
+    }
+  } else {
+    a.classList.remove('flipped'); b.classList.remove('flipped');
+    matchTurn = matchTurn === 1 ? 2 : 1;
+    document.getElementById('p1-score').classList.toggle('active-player', matchTurn === 1);
+    document.getElementById('p2-score').classList.toggle('active-player', matchTurn === 2);
+    document.getElementById('match-status').textContent = `Player ${matchTurn}'s turn! 💕`;
+  }
+  flipped = [];
+  matchLocked = false;
+}
+
+function endMatch() {
+  const [s1, s2] = scores;
+  let emoji, title, msg;
+  if (s1 > s2) { emoji='🏆'; title='Player 1 Wins!'; msg=`${s1} vs ${s2} pairs — sharp memory! Play again to let Player 2 redeem themselves 😄`; }
+  else if (s2 > s1) { emoji='🏆'; title='Player 2 Wins!'; msg=`${s2} vs ${s1} pairs — well played! Player 1 wants a rematch 😄`; }
+  else { emoji='🤝'; title="It's a Tie!"; msg=`${s1} pairs each — you're perfectly matched! 💕`; }
+  showResult('match', emoji, title, msg);
+}
+
+// ── Result screen ─────────────────────────────────────────────────
+function showResult(game, emoji, title, msg) {
+  document.getElementById('res-emoji').textContent = emoji;
+  document.getElementById('res-title').textContent = title;
+  document.getElementById('res-msg').textContent = msg;
+  show('result-screen');
+}
+</script>
+</body>
+</html>
